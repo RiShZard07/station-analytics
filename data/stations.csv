@@ -1,0 +1,13 @@
+station_key,site_key,site_name,site_type,is_reference
+STA-01,CM-A,Contract manufacturer site A,contract_manufacturer,0
+STA-02,CM-A,Contract manufacturer site A,contract_manufacturer,0
+STA-03,CM-A,Contract manufacturer site A,contract_manufacturer,0
+STA-04,CM-A,Contract manufacturer site A,contract_manufacturer,0
+STA-05,CM-A,Contract manufacturer site A,contract_manufacturer,0
+STA-06,CM-B,Contract manufacturer site B,contract_manufacturer,0
+STA-07,CM-B,Contract manufacturer site B,contract_manufacturer,0
+STA-08,CM-B,Contract manufacturer site B,contract_manufacturer,0
+STA-09,CM-B,Contract manufacturer site B,contract_manufacturer,0
+STA-10,CM-B,Contract manufacturer site B,contract_manufacturer,0
+STA-11,LAB,Optical metrology lab,lab,0
+STA-12,LAB,Optical metrology lab,lab,1

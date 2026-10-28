@@ -1,0 +1,7 @@
+output/
+data/generated/
+__pycache__/
+*.pyc
+.venv/
+*.sqlite
+.pytest_cache/
