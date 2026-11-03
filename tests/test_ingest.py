@@ -95,6 +95,20 @@ def test_bad_or_unknown_station_quarantines_whole_row(conn, tmp_path):
     assert {f[0] for f in facts(conn)} == {"STA-07"}
 
 
+def test_bad_timestamp_repeat_or_unit_quarantines_whole_row(conn, tmp_path):
+    rows = [base_row(measured_at="2026-01-05T09:00:00"), base_row(unit_id="U2", measured_at=""),
+            base_row(unit_id="U3", repeat_no="x"), base_row(unit_id="U4", repeat_no=""),
+            base_row(unit_id="U5", repeat_no="2.7"), base_row(unit_id=""), base_row(unit_id="  "),
+            base_row(unit_id="U8", repeat_no="2.0"), base_row(unit_id="U9")]
+    result = ingest_batch(conn, write_batch(tmp_path / "b.csv", rows), "B1", "v2")
+    assert result.rows_in == 9 and result.accepted == 8
+    assert result.reasons == {"bad_timestamp": 2, "bad_repeat": 3, "missing_unit": 2}
+    # The quarantine payload is the whole source row, so nothing is lost.
+    payloads = [json.loads(p) for reason, _, p in quarantine(conn) if reason == "bad_repeat"]
+    assert sorted(p["repeat_no"] for p in payloads) == ["", "2.7", "x"]
+    assert conn.execute("SELECT unit_id, repeat_no FROM fact_measurement GROUP BY unit_id").fetchall() == [("U8", 2), ("U9", 1)]
+
+
 def test_reingest_same_batch_is_noop(conn, tmp_path):
     path = write_batch(tmp_path / "b.csv", [base_row(), base_row(unit_id="U2", mtf_50=-999)])
     first = ingest_batch(conn, path, "B1", "v2")

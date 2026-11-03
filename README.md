@@ -23,7 +23,7 @@ hand-computed examples, not as validated metrology software.
 
 ```
 pip install -r requirements.txt
-python -m pytest -q                              # 61 tests, fully offline, about 5 seconds
+python -m pytest -q                              # 62 tests, fully offline, about 5 seconds
 python -m station_analytics demo --check        # whole pipeline into output/, exits 1 on any failed check
 ```
 
@@ -53,9 +53,9 @@ CSV batches  ------>   schema contract per version   fact_measurement  --->  dri
 (synthetic,            unknown columns quarantined   capability.csv
  faults injected)      duplicates removed            drift_summary.csv  ---> report.html (inline SVG)
                        station names canonicalised   agreement.csv           metrics.json
-                       sentinel/range/type checks    correlation_*.csv
-                       SQLite warehouse              charts.json
-                                                                             demo --check compares all
+                       timestamp/repeat/unit checks  correlation_*.csv
+                       sentinel/range/type checks    charts.json
+                       SQLite warehouse                                      demo --check compares all
                                                                              of the above with
                                                                              manifest.json and SQL
 ```
