@@ -6,7 +6,8 @@ Policies (each one is tested):
 - Known drift is handled by the per-version rename map (v1 lum_nits -> luminance_nits).
 - Exact duplicate source rows are quarantined; the first occurrence wins.
 - Station names are canonicalised to STA-NN at ingest. Unparseable or unknown stations
-  quarantine the whole source row.
+  quarantine the whole source row, as do an unparseable timestamp, a repeat number that
+  is not a whole number, and a blank unit id.
 - Missing operator or instrument serial keeps the row but records a quality flag.
 - Each measurement value is checked for type, sentinel (-999, 9999) and plausible range.
   Bad values quarantine that single measurement, not the whole row.
@@ -162,8 +163,11 @@ def _validate_rows(frame: pd.DataFrame, stations: set[str], q: list) -> pd.DataF
     key = frame["station"].map(mapping)
     ts = pd.to_datetime(frame["measured_at"], errors="coerce", format="%Y-%m-%d %H:%M:%S")
     rep = pd.to_numeric(frame["repeat_no"], errors="coerce")
+    # A repeat number must be a whole number. Without the second test a value such as
+    # "2.7" would pass as numeric and astype(int) below would silently truncate it to 2.
+    bad_repeat = rep.isna() | (rep % 1 != 0)
     reason = np.select(
-        [key.isna().to_numpy(), ~key.isin(stations).to_numpy(), ts.isna().to_numpy(), rep.isna().to_numpy(),
+        [key.isna().to_numpy(), ~key.isin(stations).to_numpy(), ts.isna().to_numpy(), bad_repeat.to_numpy(),
          (frame["unit_id"].str.strip() == "").to_numpy()],
         ["bad_station", "unknown_station", "bad_timestamp", "bad_repeat", "missing_unit"], default="")
     bad = reason != ""

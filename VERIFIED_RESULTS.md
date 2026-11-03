@@ -17,7 +17,7 @@ python -m station_analytics demo --check
 ## Test run
 
 ```
-61 passed in 3.89s
+62 passed in 4.02s
 ```
 
 The suite is fully offline. It includes one reduced end-to-end run
