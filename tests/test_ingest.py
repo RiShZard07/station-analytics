@@ -95,6 +95,35 @@ def test_bad_or_unknown_station_quarantines_whole_row(conn, tmp_path):
     assert {f[0] for f in facts(conn)} == {"STA-07"}
 
 
+@pytest.mark.parametrize("fault, reason", [
+    ({"measured_at": "2026-01-05T09:00:00"}, "bad_timestamp"),
+    ({"measured_at": "05/01/2026 09:00"}, "bad_timestamp"),
+    ({"repeat_no": "x"}, "bad_repeat"),
+    ({"repeat_no": ""}, "bad_repeat"),
+    ({"repeat_no": "1.5"}, "bad_repeat"),
+    ({"repeat_no": "0"}, "bad_repeat"),
+    ({"repeat_no": "-1"}, "bad_repeat"),
+    ({"unit_id": "   "}, "missing_unit"),
+])
+def test_row_level_faults_quarantine_whole_row(conn, tmp_path, fault, reason):
+    rows = [base_row(**fault), base_row(unit_id="U2")]
+    result = ingest_batch(conn, write_batch(tmp_path / "b.csv", rows), "B1", "v2")
+    assert result.accepted == 4 and result.reasons == {reason: 1}
+    assert {f[1] for f in facts(conn)} == {"U2"}
+    got_reason, detail, payload = quarantine(conn)[0]
+    assert got_reason == reason and detail == "STA-07"
+    assert json.loads(payload)[next(iter(fault))] == next(iter(fault.values()))
+
+
+def test_repeat_numbers_are_stored_as_integers(conn, tmp_path):
+    rows = [base_row(repeat_no="1"), base_row(repeat_no="2"), base_row(repeat_no="3.0")]
+    result = ingest_batch(conn, write_batch(tmp_path / "b.csv", rows), "B1", "v2")
+    assert result.accepted == 12 and result.quarantined == 0
+    stored = conn.execute("SELECT DISTINCT repeat_no FROM fact_measurement ORDER BY 1").fetchall()
+    assert stored == [(1,), (2,), (3,)]
+    assert conn.execute("SELECT typeof(repeat_no) FROM fact_measurement LIMIT 1").fetchone() == ("integer",)
+
+
 def test_reingest_same_batch_is_noop(conn, tmp_path):
     path = write_batch(tmp_path / "b.csv", [base_row(), base_row(unit_id="U2", mtf_50=-999)])
     first = ingest_batch(conn, path, "B1", "v2")

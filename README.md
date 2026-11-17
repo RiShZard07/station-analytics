@@ -23,7 +23,7 @@ hand-computed examples, not as validated metrology software.
 
 ```
 pip install -r requirements.txt
-python -m pytest -q                              # 61 tests, fully offline, about 5 seconds
+python -m pytest -q                              # 70 tests, fully offline, about 5 seconds
 python -m station_analytics demo --check        # whole pipeline into output/, exits 1 on any failed check
 ```
 

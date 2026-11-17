@@ -7,6 +7,8 @@ Policies (each one is tested):
 - Exact duplicate source rows are quarantined; the first occurrence wins.
 - Station names are canonicalised to STA-NN at ingest. Unparseable or unknown stations
   quarantine the whole source row.
+- A timestamp that does not parse, a repeat number that is not a positive integer, or a
+  blank unit id also quarantines the whole source row, with the raw row as the payload.
 - Missing operator or instrument serial keeps the row but records a quality flag.
 - Each measurement value is checked for type, sentinel (-999, 9999) and plausible range.
   Bad values quarantine that single measurement, not the whole row.
@@ -162,8 +164,11 @@ def _validate_rows(frame: pd.DataFrame, stations: set[str], q: list) -> pd.DataF
     key = frame["station"].map(mapping)
     ts = pd.to_datetime(frame["measured_at"], errors="coerce", format="%Y-%m-%d %H:%M:%S")
     rep = pd.to_numeric(frame["repeat_no"], errors="coerce")
+    # Repeat numbers are 1-based counts. Checking this here matters because astype(int)
+    # below would otherwise turn "1.5" into 1 and keep "-1" without any record of it.
+    bad_repeat = rep.isna() | (rep % 1 != 0) | (rep < 1)
     reason = np.select(
-        [key.isna().to_numpy(), ~key.isin(stations).to_numpy(), ts.isna().to_numpy(), rep.isna().to_numpy(),
+        [key.isna().to_numpy(), ~key.isin(stations).to_numpy(), ts.isna().to_numpy(), bad_repeat.to_numpy(),
          (frame["unit_id"].str.strip() == "").to_numpy()],
         ["bad_station", "unknown_station", "bad_timestamp", "bad_repeat", "missing_unit"], default="")
     bad = reason != ""
